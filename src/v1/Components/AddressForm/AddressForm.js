@@ -11,6 +11,7 @@ import { actionsCreator } from "../../Redux/actions/actionsCreator";
 import useGeoLocation from "../../Hooks/useGeoLocation";
 import { LocationPopUp } from "..";
 
+
 const mapStateToProps = ({ inventory }) => ({
   inventory,
 });
@@ -27,23 +28,45 @@ const AddressForm = (props) => {
   const location = useGeoLocation();
   const [completeAddress, setcompleteAddress] = useState(null);
   const [coordinates, setcoordinates] = useState({ lat: "", lng: "", link: "" })
+  const [valid, setValid] = useState(false);
+  console.log(inventoryList,"inventory list");
   useEffect(() => {
     let temp = {
       lat: "",
       lng: ""
     }
     // if (props.isSignup) {
-    if (location.loaded && location.coordinates)
+    if (location.loaded && location.coordinates){
       temp = {
         lat: JSON.stringify(location.coordinates.lat),
         lng: JSON.stringify(location.coordinates.lng),
         link: 'https://www.google.com/maps/search/?api=1&query=' + JSON.stringify(location.coordinates.lat) + '%2C' + JSON.stringify(location.coordinates.lng) + ''
       }
     setcoordinates(temp)
+    }
     // console.log(temp)
     // }
   }, [location])
+  // const checkDeliverability = (area)=>{
+  //   for(let i=0;i<inventoryList.length;i++){
+  //     if(inventoryList[i]["value"]===area){
+  //       setInventory(inventoryList[i]);
+  //       console.log(inventoryList[i]);
+  //       const distance = 1000*coordinateDistanceFinder(latitude,longitude,parseFloat(inventoryList[i].latitude),parseFloat(inventoryList[i].longitude));
+  //       console.log(distance,"distance");
+  //       console.log(inventoryList[i].deliverable_distance);
+  //       if(distance>inventoryList[i].deliverable_distance){
+  //         toast.error("Your location is not delivarable from this branch choose another branch");
+  //       }
+  //       else{
+  //         setValid(true)
+  //       }
+  //     }
+  //   }
+    
 
+  // }
+  
   const dispatch = useDispatch();
 
   const addressToString = (input) => {
@@ -68,7 +91,7 @@ const AddressForm = (props) => {
 
   useEffect(() => {
     if (props.isSignup !== true) {
-      if (area !== "" && addressLine1 !== "") {
+      if (addressLine1 !== "") {
         setcompleteAddress(addressLine1 + "\n" + addressLine2 + "\n" + pinCode + "coordinates{'lat':" + coordinates.lat + ",'long':" + coordinates.lng + ",'link':" + coordinates.link + "}");
         props.valueTransfer("new", addressToString(completeAddress));
       }
@@ -82,7 +105,7 @@ const AddressForm = (props) => {
   }, []);
 
   useEffect(() => {
-    // console.log(completeAddress)
+    console.log(completeAddress,"complete address")
   }, [completeAddress])
 
   useEffect(() => {
@@ -99,7 +122,7 @@ const AddressForm = (props) => {
 
   useEffect(() => {
     if (!props.isSignup)
-      if (area === "" || addressLine1 === "") setcompleteAddress(null);
+      if ( addressLine1 === "") setcompleteAddress(null);
   }, [area, addressLine1]);
 
   const fetchInventories = () => {
@@ -114,12 +137,12 @@ const AddressForm = (props) => {
   return (
     <form className="address-form-wrapper">
       {location.error ? <LocationPopUp show={modal} onClose={setmodal} /> : null}
-      {props.labels ? <p className="address-area-label">Area</p> : null}
+      {/* {props.labels ? <p className="address-area-label">Area</p> : null}
       <Dropdown
         placeholder={"Area"}
         options={inventoryList}
         onClick={setArea}
-      />
+      /> */}
       {!props.isSignup && <>
         <InputField
           onChange={(e) => setaddressLine1(e.target.value)}
@@ -141,7 +164,7 @@ const AddressForm = (props) => {
           max="999999"
           value={pinCode >= 9999999 ? pinCode : null}
         />
-        {props.showButton && <br />}
+        {props.showButton &&   <br />}
 
         {props.showButton ? (
           <Button
@@ -150,7 +173,7 @@ const AddressForm = (props) => {
             clicker={() => {
               if (completeAddress)
                 addAddress(completeAddress);
-              if (coordinates) {
+              else if (coordinates) {
                 addAddress(coordinates, 4);
               }
               else toast.error("Empty Fields");

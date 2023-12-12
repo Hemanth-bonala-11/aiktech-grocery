@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import "./Footer.scss";
@@ -6,6 +6,7 @@ import fbIcon from "../../Assets/Images/navbar/facebook.svg";
 import instaIcon from "../../Assets/Images/navbar/instagram.svg";
 import linkedinIcon from "../../Assets/Images/navbar/linkedin.svg";
 import { SOCIALMEDIA_LINKS } from "../../Assets/Constant";
+import { fetchTenant } from "../../Api/tenantAPi";
 const mapStateToProps = ({ categories, auth }) => ({
   categories,
   auth,
@@ -14,12 +15,21 @@ const mapStateToProps = ({ categories, auth }) => ({
 const Footer = () => {
   //   const { auth } = useSelector(mapStateToProps);
   //   const { showLoginPopup = false, isLoggedIn, userDetails = {} } = auth;
+  const [ title, setTitle ] = useState("")
+  const [ customDomain, setCustomDomain ] = useState("")
   const current_year = new Date().getFullYear();
   const {
     categories: { list: categoryList = [] },
     auth,
   } = useSelector(mapStateToProps);
   const { isLoggedIn } = auth;
+
+  useEffect(async ()=>{
+    const response = await fetchTenant();
+    console.log(response.data,"tenant details");
+    setTitle(response.data.title);
+    setCustomDomain(response.data.custom_domain)
+  },[])
 
   const formattedCategories = categoryList;
   return (
@@ -29,9 +39,9 @@ const Footer = () => {
           <div className="footer-content footer-aboutus">
             <p className="footer-head">About Us</p>
             <p>
-              Real Value Mart has been delighting customers for years.
+             {title} has been delighting customers for years.
               Find the widest collection and get free delivery on every order.
-              Order through realvaluemart.in
+              Order through {customDomain}
             </p>
           </div>
 
@@ -65,7 +75,7 @@ const Footer = () => {
                     target="_blank"
                     href="/privacy-policy#PhurtiDeliveryServices"
                   >
-                    Realvaluemart Delivery Services
+                    {title} Delivery Services
                   </a>
                 </li>
                 <li>
@@ -200,7 +210,7 @@ const Footer = () => {
         )}
       </div>
       <hr />
-      <p>© Realvaluemart { current_year }</p>
+      <p>© {title} { current_year }</p>
     </div>
   );
 };

@@ -8,7 +8,6 @@ export default function Signup({ submitHandler, controls, errors, showErr, onCha
     const [signupAddress, setSignupAddress] = useState('')
 
     const addressSetter = (item, area, coords = { lat: "", lng: "" }) => {
-        // setSignupAddress(item)
         let address = {
             'target': {
                 'value': item
@@ -74,13 +73,13 @@ export default function Signup({ submitHandler, controls, errors, showErr, onCha
                 addressSetter={addressSetter}
             />
 
-            {/* <InputField type="password"
+            <InputField type="password"
                 placeholder='Password'
                 value={password}
                 onChange={(e) =>
                     onChange(e, 'PASSWORD')}
                 error={findError('password', errors, showErr)}
-            /> */}
+            />
 
             <Button
                 loading={loading}

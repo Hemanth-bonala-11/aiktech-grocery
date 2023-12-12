@@ -21,19 +21,36 @@ import { toast } from "react-toastify";
 import get from "lodash/get";
 import { useHistory } from "react-router-dom";
 import logo from "../../Assets/Images/navbar/new_logo.svg";
+import {coordinateDistanceFinder, getCoordinates} from '../../Utils/general-utils'
+import { fetchUserDetails, updateUserInventory } from "../../Api/authAPI";
 
-const mapStateToProps = ({ cart, auth, payment }) => ({
+const mapStateToProps = ({ cart, auth, payment, inventory }) => ({
   cart,
   auth,
   payment,
+  inventory
 });
 
 export default function Checkout() {
   const {
+    inventory: { list: inventoryList },
+
+  } = useSelector(mapStateToProps);
+  const {
     cart: cartData,
-    auth: { isLoggedIn = false },
+    auth: { isLoggedIn = false},
     payment,
   } = useSelector(mapStateToProps);
+  const [userInventory,setUserInventory ] = useState("")
+  useEffect(async ()=>{
+    const response = await fetchUserDetails();
+    console.log(response.data.data,"user");
+    if(response.data.data.inventory){
+      setUserInventory(response.data.data.inventory.id)
+    }
+    
+  },[])
+  
   const {walletBalance = 0,isWallet = false} = payment
   const [selectedAddress, setSelectedAddress] = useState();
   const [mode_of_payment, setModeOfPayment] = useState();
@@ -49,12 +66,15 @@ export default function Checkout() {
   const dispatch = useDispatch();
   const history = useHistory();
   const [wallet, setwallet] = useState(null);
+
   // const [isWallet, setIsWallet] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState();
   const [walletResponse, setWalletResponse] = useState({
     status: null,
     payment_id: null,
   });
+ 
+  
   //   console.log(cartData);
   cartData.out_of_stock = outOfStock
   const { cartitem = [], delivery_charge, default_delivery_charge, previous_delivery_charge, transactionDebit, start_time } = cartData;
@@ -122,7 +142,79 @@ export default function Checkout() {
       }
     }
   };
+  // useEffect(async ()=>{
+  //   if(selectedInventory){
+  //     const data = {
+  //       "inventory_id": selectedInventory
+  //     }
+  //     const response =await updateUserInventory(data)
+  //   }
+  // },[selectedInventory])
+  // useEffect(()=>{
+  //   if(distances.length !==0 && deliverableInventories.length !== 0){
+  //     console.log(distances,"distances");
+  //   const min = Math.min(...distances);
+  //   console.log(min,"min");
+  //   const index = distances.indexOf(min);
+  //   console.log(index,"index");
+  //   console.log(deliverableInventories,"deliverable inventories");
+  //   const inventory = deliverableInventories[index];
+  //   console.log(inventory,"selected inventory");
+  //   setSelectedInventory(inventory);
+  //   const data = {
+  //     "inventory_id": inventory
+  //   }
+  //   const response = updateUserInventory(data)
+  //   }
 
+  // },[distances,deliverableInventories])
+
+  const checkDeliverability = async ()=>{
+      let distances_list = [];
+      let inventories = [];
+    const coordinates = getCoordinates(selectedAddress);
+    let latitude,longitude;
+    if(coordinates){
+       latitude = coordinates[0];
+       longitude = coordinates[1];
+    }
+
+    console.log(latitude,longitude);
+
+    for(let i=0;i<inventoryList.length;i++){
+
+        console.log(inventoryList[i]);
+        const distance = 1000*coordinateDistanceFinder(latitude,longitude,parseFloat(inventoryList[i].latitude),parseFloat(inventoryList[i].longitude));
+        console.log(distance,"distance");
+        console.log(inventoryList[i].deliverable_distance);
+        if(distance<inventoryList[i].deliverable_distance){
+          distances_list.push(distance);
+          inventories.push(inventoryList[i].value)
+        }
+      }
+
+    console.log(distances_list,"distances_list");
+
+    if(distances_list.length===0 && inventories.length===0){
+      return false
+    }
+    else{
+      const min = Math.min(...distances_list);
+    console.log(min,"min");
+    const index = distances_list.indexOf(min);
+    console.log(index,"index");
+    console.log(inventories,"deliverable inventories");
+    const inventory = inventories[index];
+    console.log(inventory,"selected inventory");
+    const data = {
+      "inventory_id": inventory
+    }
+    if(inventory !== userInventory){
+      const response = await updateUserInventory(data)
+    }
+      return true
+    }
+  }
   const checkoutHandler = () => {
     if (isLoggedIn) {
       if (!selectedAddress && !newAddress)
@@ -333,7 +425,9 @@ export default function Checkout() {
 
   const placeOrder = async () => {
     setLoading(true);
+    
     try {
+      
       const { cartitem = [] } = cartData;
       const modifiedCartItems = [...cartitem].map((i) => {
         return { product: i.id, quantity: i.quantity };
@@ -356,8 +450,13 @@ export default function Checkout() {
         order_list: modifiedCartItems,
         mode_of_payment: mode_of_payment,
       };
-     
-      
+      const deliverable = await checkDeliverability();
+      console.log(deliverable,"deliverable");
+      if(!deliverable){
+        setLoading(false)
+        return toast.error("cannot order your location")
+        
+      }
       try {
         fetchCartDetails()
         if (cartData.delivery_charge>cartData.default_delivery_charge){
@@ -400,6 +499,7 @@ export default function Checkout() {
       
       // setLoading(false);
     } catch (error) {
+      console.error(error.message)
       toast.error("Error while creating order");
       setLoading(false);
       

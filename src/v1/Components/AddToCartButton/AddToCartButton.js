@@ -23,6 +23,7 @@ export default function AddToCartButton({ product }) {
     const { id } = product;
     const { isLoggedIn = false } = auth;
     const cartitem = get(cart, 'cartitem', []);
+    console.log(cartitem,"cartitem");
     const dispatch = useDispatch();
     const changeQuantity = (param) => {
         if (!isLoggedIn) {

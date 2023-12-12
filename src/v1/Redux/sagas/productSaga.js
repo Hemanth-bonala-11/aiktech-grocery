@@ -52,8 +52,9 @@ function* fetchStockDropdown(action) {
 function* fetchInventories(action) {
     try {
         const response = yield call(productAPI.fetchInventories, {});
-        const data = get(response, 'data.results', []);
-        const formattedData = formatOptions(data, 'name', 'id', 'is_active');
+        console.log(response, "inventories response");
+        // const data = get(response, 'data.results', []);
+        const formattedData = formatOptions(response.data, 'name', 'id', 'is_active','latitude', 'longitude',"delivery_distance");
         yield put(actionsCreator.SET_INVENTORY({ list: formattedData }));
     } catch (error) {
 

@@ -1,5 +1,3 @@
-import Button from '../Homepage/Button/Button'
-import InputField from '../InputField';
 import React, { useEffect, useState } from 'react'
 import './Auth.scss'
 import { authAPI } from '../../Api';
@@ -9,14 +7,26 @@ import { checkValidData, errorMsg, findError, isRequired, storeToken, validate }
 import get from 'lodash/get';
 import { toast } from 'react-toastify';
 import { DEFAULT_INPUT_ERROR } from '../../Assets/Constant';
-import { Login, Signup, Otp } from '../../Components';
+import { Login, Signup, Otp, LocationPopUp } from '../../Components';
+import { useSelector } from 'react-redux';
+import { getNearestInventory } from '../../Utils/general-utils'
+import useGeoLocation from '../../Hooks/useGeoLocation';
+
+const mapStateToProps = ({ inventory }) => ({
+    inventory,
+  });
 
 const Auth = (props) => {
+
+    const {
+        inventory: { list: inventoryList },
+      } = useSelector(mapStateToProps);
+
     const [username, setUserName] = useState('');
     const [otpScreen, setOtpScreen] = useState(false);
     const [phone_number, setPhone] = useState('');
     const [email, setEmail] = useState('');
-    // const [password, setPassword] = useState('');
+    const [password, setPassword] = useState('');
     const [address, setAddress] = useState('');
     const [coordinates, setCoordinates] = useState('');
     const [address_url, setaddressURL] = useState('');
@@ -28,10 +38,20 @@ const Auth = (props) => {
     const [login_option, setlogin_option] = useState('login');
     const dispatch = useDispatch()
     const [loading, setLoading] = useState(false)
+    const location = useGeoLocation();
+
 
     useEffect(() => {
         clearInputs();
     }, [login_option])
+    useEffect(()=>{
+        if(location.coordinates){
+            const inventory = getNearestInventory(inventoryList, location.coordinates.lat, location.coordinates.lng);
+            setInventory(inventory)
+            console.log(inventory,"nearest inventory is===d")
+        }
+        location.error?<LocationPopUp/>:(<div></div>)        
+    },[location])
 
     const onChange = (e, key) => {
         const value = e.target.value;
@@ -48,10 +68,10 @@ const Auth = (props) => {
                 setEmail(value);
                 validateInput(value, ['isEmail'], 'email');
                 break;
-            // case 'PASSWORD':
-            //     setPassword(value);
-            //     validateInput(value, ['isRequired'], 'password');
-            //     break;
+            case 'PASSWORD':
+                setPassword(value);
+                validateInput(value, ['isRequired'], 'password');
+                break;
             case 'ADDRESS':
                 setAddress(value);
                 validateInput(value, ['isRequired'], 'address');
@@ -62,12 +82,13 @@ const Auth = (props) => {
                 setOtp(value);
                 validateInput(value, ['isRequired'], 'otp');
                 break;
-            case 'INVENTORY':
-                setInventory(value);
-                validateInput(value, ['isRequired'], 'inventory');
-                break;
+            // case 'INVENTORY':
+            //     setInventory(value);
+            //     validateInput(value, ['isRequired'], 'inventory');
+            //     break;
         }
     }
+    
 
     const validateInput = (value, rules, key) => {
         const { error = false, msg = '' } = validate(value, rules)
@@ -77,17 +98,22 @@ const Auth = (props) => {
     const register = async () => {
         setLoading(true)
         try {
-            const payload = {
-                name: username,
-                // password,
-                // password2: password,
-                phone_number,
-                role: 'C',
-                address,
-                inventory,
-                coordinates,
-                device_id: ''
+            if(inventory===null){
+                toast.error("your location cannot be delivered");
             }
+                const payload = {
+                    name: username,
+                    password,
+                    // password2: password,
+                    phone_number,
+                    role: 'C',
+                    address,
+                    inventory,
+                    coordinates,
+                    device_id: ''
+                }
+            
+            
             if (email) {
                 payload['email'] = email;
             }

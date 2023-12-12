@@ -18,6 +18,8 @@ export default function CheckoutAddress({
   const [addresses, setAddresses] = useState([]);
   const [modal, setmodal] = useState(false);
   const [option, setOption] = useState();
+  const [latitude, setLatitude] = useState();
+  const [longitude, setLongitude] = useState()
   const onChange = (e) => {
     const value = e.target.value;
     updateAddress("new", value);
@@ -28,12 +30,15 @@ export default function CheckoutAddress({
     else
       return str.substring(str.indexOf(word), str.length);
   }
+  console.log(selectedAddress,"selected address");
 
   function findWord(str, word) {
     console.log(str);
     if(str==null || str=='') return false
     return str.indexOf(word) > -1;
   }
+
+
 
   useEffect(() => {
     if (document.querySelector(".edit_address")) {

@@ -20,3 +20,10 @@ export const editAddresses = (data) => {
     const payload = { ...data };
     return requestMaker(url, 'patch', { params, payload });
 };
+
+export const fetchInventoryAddress = (data)=>{
+    const url=`/shop/Inventory/address`
+    const params = {};
+    const payload = {...data}
+    return requestMaker(url, "get",{ params, payload })
+}

@@ -1,5 +1,5 @@
 // import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useHistory, useParams } from "react-router-dom";
 import { productAPI } from "../../Api";
@@ -10,6 +10,8 @@ import "./Category.scss";
 // import get from "lodash/get";
 import { CategoryCard } from "../../Components";
 import SubCategoryCard from './SubCategory/SubCategoryCard'
+import InfiniteScroll from 'react-infinite-scroller';
+import LoadingProducts from "../../Components/Loader/LoadingProducts";
 
 const mapStateToProps = ({ auth = {}, categories = {} }) => ({
   auth,
@@ -28,8 +30,16 @@ const Category = () => {
   const [subCategoryId, setSubcategoryId] = useState(null)
   const [productsList, setProductsList] = useState(null);
   const { category = "" } = useParams();
+  const [page, setPage]=useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [showLoadingCards, SetShowLoadingCards] = useState(false)
   const dispatch = useDispatch();
   const history = useHistory();
+  const [loadingMore, setLoadingMore] = useState(false);
+  const infiniteScrollerRef = useRef(null);
+  const [isVisible,setIsvisible] = useState(false)
+
+
   let color_generator = 0;
   
   const subtabhandler = (subcategory, id) => {
@@ -43,10 +53,8 @@ const Category = () => {
     setCategory(category)
 
   };
- 
 
   useEffect(() => {
-    // fetchProducts(categoryName);
     // setCategory(categoryName);
     categoryList
       && categoryList.map((item) => {
@@ -79,7 +87,12 @@ const Category = () => {
   }, [categoryName]);
 
   useEffect(() => {
-    fetchProducts(subCategoryName, subCategoryId);
+    setHasMore(true);
+    setPage(1);
+    if(subCategoryName && subCategoryId && page){
+    setProductsList([]);
+    fetchProducts(1);
+    }
     setSubCategoryName(subCategoryName);
   }, [subCategoryName]);
 
@@ -91,7 +104,6 @@ const Category = () => {
         let firstCategory = categoryList[0]["name"];
         setCategory(firstCategory);
         setCategoryId(categoryList[0]["id"])
-        // fetchProducts(firstCategory);
       }
     }
   }, [categoryList]);
@@ -100,10 +112,79 @@ const Category = () => {
     dispatch(actionsCreator.FETCH_CATEGORIES());
   };
 
-  const fetchProducts = async (name, id) => {
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    // Cleanup function to set isMounted to false when the component unmounts
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+  const checkInWindow = (element )=>{
+    const viewport = element.current.getBoundingClientRect();
+    console.log(viewport,"viewport value");
+    const visibility = viewport.top < window.innerHeight && viewport.bottom >= 0
+    
+    setIsvisible(visibility);
+    return visibility
+  }
+  const loadMore = () => {
+    console.log(loadingMore,"loading more");
+    console.log(isVisible,"is visible");
+    checkInWindow(infiniteScrollerRef)
+    if (!loadingMore ) {
+      setLoadingMore(true);  // Set loadingMore to true to prevent concurrent requests
+      fetchMoreProducts(page + 1)
+        .finally(() => setLoadingMore(false));  // Reset loadingMore on completion (success or failure)
+    }
+  };
+
+  const debounce = (func, delay) => {
+  let timeoutId;
+  return function () {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, arguments), delay);
+    };
+   };
+
+const debouncedLoadMore = debounce(loadMore, 500);
+
+
+
+  const fetchMoreProducts = async (newPage) => {
     try {
-      const response = await productAPI.fetchProducts({ name, id });
+      const response = await productAPI.fetchPagedProducts({
+        subCategoryName,
+        subCategoryId,
+        page: newPage,
+      });
+
+      if (response.data.data.length === 0) {
+        setHasMore(false);
+      } else {
+        setProductsList((prevProducts) => {
+          const uniqueProducts = [
+            ...new Map([...prevProducts, ...response.data.data].map((item) => [item.id, item])).values(),
+          ];
+          setPage(newPage);
+          return uniqueProducts;
+        });
+      }
+    } catch (error) {
+      console.log("Api error")
+    }
+  };
+
+
+  const fetchProducts = async (page) => {
+    try {
+      SetShowLoadingCards(true)
+      const response = await productAPI.fetchPagedProducts({subCategoryName, subCategoryId, page});
       setProductsList(response.data.data);
+      SetShowLoadingCards(false);
+      if(response.data.data.length===0){
+        setHasMore(false)
+      }
     } catch (error) { }
   };
 
@@ -130,10 +211,9 @@ const Category = () => {
         <div className="category-name">{categoryName}</div>
         <div className="tab-wrapper">
           {categoryList
-            ? categoryList.map((item, index) => {
-              
+            ? categoryList.map((item, index) => {    
               return (
-                <CategoryCard
+                  <CategoryCard
                   active={item.name===categoryName}
                   title={item.name}
                   key={item.name}
@@ -150,20 +230,21 @@ const Category = () => {
       <div className="tab-wrapper">
           {categoryList && categoryList.map((item, index) => (
               item.sub_categories.length>0 && item.name===categoryName? 
-              <SubCategoryCard
+
+                <SubCategoryCard
                 active={item.name===subCategoryName}
                 title={"All"}
                 key={item.name}
                 image={item.image}
                 onClick={() => subtabhandler(item.name, item.id)}
                 color={(index)} 
-              />: null
+              />
+              : null
           ))}
           {categoryList && categoryList.map((item) => (
               item.name===categoryName? 
               item.sub_categories.length>0 && item.sub_categories.map((subitem, index)=>{
                 return (
-                  
                     <SubCategoryCard
                       active={subitem.name===subCategoryName}
                       title={subitem.name}
@@ -178,11 +259,23 @@ const Category = () => {
         </div> 
       
 
-      <div className="tab-products">
-        {productsList && productsList.length > 0 ? (
-          productsList.sort((a, b) => b.quantity_remaining - a.quantity_remaining).map((item) => {
+      <div className="tab-products" ref={infiniteScrollerRef}>
+        {productsList && productsList.length > 0 ? (      
+          <InfiniteScroll
+          className="product-cards"
+          loadMore={debouncedLoadMore}
+          hasMore={hasMore}
+          loader={<div className="make-inline"><LoadingProducts number={6}/></div>}
+          >
+            {
+            showLoadingCards?(<LoadingProducts number={10}/>)
+            :
+            
+            <>
+           
+          {productsList.map((item) => {
             return (
-              <ProductCard
+                <ProductCard
                 title={item.product_name}
                 quantity={item.description}
                 price={item.price}
@@ -193,10 +286,30 @@ const Category = () => {
                 outofstock={item.out_of_stock}
                 quantity_remaining={item.quantity_remaining}
               />
+              
             );
           })
-        ) : (
-          <div>Products are coming soon!</div>
+            
+        }
+        {
+          hasMore===false?(
+            <div>
+              Products Finished...
+            </div>
+          ):(<div>
+
+          </div>)
+        }
+        </>
+     }
+        
+        </InfiniteScroll>
+        )
+        
+         : (
+          hasMore?
+          <LoadingProducts number={10}/>
+          :<p>Products Coming soon</p>
         )}
       </div>
     </div>

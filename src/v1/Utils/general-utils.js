@@ -1,4 +1,5 @@
 import get from "lodash/get";
+import useGeoLocation from "../Hooks/useGeoLocation";
 
 export const storeToken = (token) => {
   localStorage.setItem("auth_token", token);
@@ -172,16 +173,22 @@ export const welcomeModalHandler = () => {
   return hidePopup && hidePopup === "true" ? true : false;
 };
 
-export const formatOptions = (options = [], key, val, act) => {
+export const formatOptions = (options = [], key, val, act, lat, long, delivery_distance) => {
   let formattedOptions = [];
   formattedOptions = options.map((element) => {
     let name = get(element, key, "");
     let value = get(element, val, "");
     let active = get(element, act, "");
+    let latitude = get(element, lat, "");
+    let longitude = get(element, long, "");
+    let deliverable_distance = get(element, delivery_distance, "")
     return {
       label: name,
       value: value,
-      active: active
+      active: active,
+      latitude: latitude,
+      longitude: longitude,
+      deliverable_distance: deliverable_distance
     };
   });
   return formattedOptions;
@@ -211,3 +218,80 @@ export function isNewLine(str, char = "\n") {
 export const removeNewLine = (str) => {
   return str.replace("\n", "");
 };
+
+export const coordinateDistanceFinder=(lat1, lon1, lat2, lon2)=>{
+
+  function toRadians(degrees) {
+    return degrees * (Math.PI / 180);
+  }
+    const earthRadius = 6371; 
+  
+    const lat1Rad = toRadians(lat1);
+    const lon1Rad = toRadians(lon1);
+    const lat2Rad = toRadians(lat2);
+    const lon2Rad = toRadians(lon2);
+  
+    const latDiff = lat2Rad - lat1Rad;
+    const lonDiff = lon2Rad - lon1Rad;
+  
+    const a =
+      Math.sin(latDiff / 2) ** 2 +
+      Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(lonDiff / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  
+    const distance = earthRadius * c;
+  
+    return distance; 
+}
+export  function getCoordinates(string){
+  const lat_start = string.indexOf("lat");
+  const lat_end = string.indexOf("long");
+  const long_end = string.indexOf("link")
+  try{
+    const latitude = parseFloat(string.substring(lat_start+5,lat_end-2));
+  const longitude = parseFloat(string.substring(lat_end+6,long_end-2));
+  console.log(latitude,longitude,"coordinates");
+  return [latitude,longitude]
+
+  }
+  catch(err){
+    console.log(err.message);
+    return null
+  }
+  
+}
+
+export const getNearestInventory =  (inventoryList, latitude, longitude)=>{
+  
+  let distances_list = [];
+  let inventories = [];
+console.log(latitude,longitude,"coordinates");
+
+for(let i=0;i<inventoryList.length;i++){
+
+    console.log(inventoryList[i]);
+    const distance = 1000*coordinateDistanceFinder(latitude,longitude,parseFloat(inventoryList[i].latitude),parseFloat(inventoryList[i].longitude));
+    console.log(distance,`distance${i}`);
+    console.log(inventoryList[i].deliverable_distance);
+    if(distance<inventoryList[i].deliverable_distance){
+      distances_list.push(distance);
+      inventories.push(inventoryList[i].value)
+    }
+  }
+
+  if(distances_list.length !==0 && inventories.length !== 0){
+    console.log(distances_list,"distances");
+  const min = Math.min(...distances_list);
+  console.log(min,"min");
+  const index = distances_list.indexOf(min);
+  console.log(index,"index");
+  console.log(inventories,"deliverable inventories");
+  const inventory = inventories[index];
+  console.log(inventory,"selected inventory");
+  return inventory
+  
+  }
+else{
+  return null
+}
+}

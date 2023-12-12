@@ -7,6 +7,10 @@ import axios from "axios";
 
 const CardOrders=({order})=>{
     const history=useHistory();
+    console.log(order, "order");
+    const [contactNumber,setContactNumber] = useState(null);
+    const [customerName,setCustomerName] = useState(null);
+
     
     const formatTime=(time)=>{
         const timestamp = new Date(time);
@@ -37,7 +41,6 @@ const CardOrders=({order})=>{
                 console.error(err.message)
             })
     }
-    
   
     return (
         <div>
@@ -47,7 +50,19 @@ const CardOrders=({order})=>{
             <div className="cardorder-quantity">{order.id}</div>
             <div className="cardorder-price">Total: ₹ {parseFloat(order.total_price).toFixed(2)}</div>
             <div className="cardorder-date">Created at : {formatTime(order.created_on)}</div>
-            <div>
+            
+            <div className="cardorder-customer">
+                <div className="cardorder-customer-details">
+                    Customer Name: {order.customer.name}
+                </div>
+
+                <div className="cardorder-customer-details">
+                    Contact Number: {order.customer.phone_number}
+                </div>
+
+            </div>
+            <div className="cardorder-address">
+                Address: {order.fulfilment_address}
             </div>
             <div className="cardorder-button-wrapper">
                 <button 
