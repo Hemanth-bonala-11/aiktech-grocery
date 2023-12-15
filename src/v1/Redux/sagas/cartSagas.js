@@ -7,8 +7,15 @@ const extractCartDetails = ({ cart = {} }) => ({ cart });
 
 function* fetchCartDetails(action) {
     try {
+        if(action.payload){
+            yield put(actionsCreator.SET_CART_DATA(action.payload));
+        }
+        else{
         const response = yield call(cartAPI.fetchCartDetails, {});
         yield put(actionsCreator.SET_CART_DATA(response['data']));
+
+        }
+        
     } catch (error) {
         yield put(actionsCreator.RESET_CART_DATA({}));
     }
@@ -28,9 +35,10 @@ function* updateCartDetails(action) {
             const payload = {
                 items: modifiedCartItems
             }
+            console.log(modifiedCartItems,"modified cart items");
             const response = yield call(cartAPI.addCartItems, payload);
             yield put(actionsCreator.RESET_CART_DATA({}));
-            yield put(actionsCreator.FETCH_CART_DETAILS());
+            yield put(actionsCreator.FETCH_CART_DETAILS(response.data["get_cart"]));
         }
     } catch (error) {
 

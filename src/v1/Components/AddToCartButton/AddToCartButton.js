@@ -23,7 +23,6 @@ export default function AddToCartButton({ product }) {
     const { id } = product;
     const { isLoggedIn = false } = auth;
     const cartitem = get(cart, 'cartitem', []);
-    console.log(cartitem,"cartitem");
     const dispatch = useDispatch();
     const changeQuantity = (param) => {
         if (!isLoggedIn) {
@@ -65,6 +64,7 @@ export default function AddToCartButton({ product }) {
     }
     const updateCart = async (newQuantity, param) => {
         try {
+            const cartitem = get(cart, 'cartitem', []);
             let modifiedCartItems = [...cartitem].map(i => {
                 return { product: i.id, quantity: i.quantity }
             });
@@ -85,6 +85,7 @@ export default function AddToCartButton({ product }) {
             }
             const payload = {
                 items: modifiedCartItems
+                
             }
             const res = await cartAPI.addCartItems(payload);
             let message = param === "decrement" ? "Item is removed successfully." : "Item added successfully."
@@ -92,14 +93,14 @@ export default function AddToCartButton({ product }) {
                 toastId: 'success1',
             })
             dispatch(actionsCreator.SET_PREVIOUS_DELIVERY_CHARGE({previous_delivery_charge: cart.delivery_charge}))
-            dispatch(actionsCreator.FETCH_CART_DETAILS());
+             dispatch(actionsCreator.FETCH_CART_DETAILS(res.data["get_cart"]));
         } catch (error) {
 
             const msg = errorMsg(error);
             toast.error(msg)
         }
     }
-    const quantity = fetchQuantity(id, cartitem)
+    const quantity = fetchQuantity(id, cartitem);
     return (
         <>
             {
