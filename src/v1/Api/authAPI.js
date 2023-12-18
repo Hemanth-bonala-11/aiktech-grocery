@@ -58,3 +58,10 @@ export const updateUserInventory = (data) => {
     const payload = {};
     return requestMaker(url, 'get', { params, payload });
 };
+
+export const fetchTenant = (data)=>{
+    const url = '/account/tenants';
+    const payload = {};
+    const params = { ...data };
+    return requestMaker(url, 'get', {params, payload});
+}

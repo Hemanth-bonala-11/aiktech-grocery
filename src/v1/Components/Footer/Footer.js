@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import "./Footer.scss";
 import fbIcon from "../../Assets/Images/navbar/facebook.svg";
@@ -7,6 +7,7 @@ import instaIcon from "../../Assets/Images/navbar/instagram.svg";
 import linkedinIcon from "../../Assets/Images/navbar/linkedin.svg";
 import { SOCIALMEDIA_LINKS } from "../../Assets/Constant";
 import { fetchTenant } from "../../Api/tenantAPi";
+import { actionsCreator } from "../../Redux/actions/actionsCreator";
 const mapStateToProps = ({ categories, auth }) => ({
   categories,
   auth,
@@ -15,21 +16,18 @@ const mapStateToProps = ({ categories, auth }) => ({
 const Footer = () => {
   //   const { auth } = useSelector(mapStateToProps);
   //   const { showLoginPopup = false, isLoggedIn, userDetails = {} } = auth;
-  const [ title, setTitle ] = useState("")
   const [ customDomain, setCustomDomain ] = useState("")
   const current_year = new Date().getFullYear();
+  const dispatch = useDispatch()
   const {
     categories: { list: categoryList = [] },
     auth,
+    auth:{ tenantDetails }
   } = useSelector(mapStateToProps);
   const { isLoggedIn } = auth;
+  console.log(tenantDetails, "tenant details in footer");
 
-  useEffect(async ()=>{
-    const response = await fetchTenant();
-    console.log(response.data,"tenant details");
-    setTitle(response.data.title);
-    setCustomDomain(response.data.custom_domain)
-  },[])
+ 
 
   const formattedCategories = categoryList;
   return (
@@ -39,9 +37,9 @@ const Footer = () => {
           <div className="footer-content footer-aboutus">
             <p className="footer-head">About Us</p>
             <p>
-             {title} has been delighting customers for years.
+             {tenantDetails.title} has been delighting customers for years.
               Find the widest collection and get free delivery on every order.
-              Order through {customDomain}
+              Order through {tenantDetails.custom_domain}
             </p>
           </div>
 
@@ -75,7 +73,7 @@ const Footer = () => {
                     target="_blank"
                     href="/privacy-policy#PhurtiDeliveryServices"
                   >
-                    {title} Delivery Services
+                    {tenantDetails.title} Delivery Services
                   </a>
                 </li>
                 <li>
@@ -210,7 +208,7 @@ const Footer = () => {
         )}
       </div>
       <hr />
-      <p>© {title} { current_year }</p>
+      <p>© {tenantDetails.title} { current_year }</p>
     </div>
   );
 };
