@@ -7,7 +7,8 @@ import { checkValidData, errorMsg, findError, isRequired, storeToken, validate }
 import get from 'lodash/get';
 import { toast } from 'react-toastify';
 import { DEFAULT_INPUT_ERROR } from '../../Assets/Constant';
-import { Login, Signup, Otp, LocationPopUp } from '../../Components';
+import { Login, Signup, Otp, LocationPopUp   } from '../../Components';
+import PasswordLogin from './Login/PasswordLogin';
 import { useSelector } from 'react-redux';
 import { getNearestInventory } from '../../Utils/general-utils'
 import useGeoLocation from '../../Hooks/useGeoLocation';
@@ -17,16 +18,16 @@ const mapStateToProps = ({ inventory }) => ({
   });
 
 const Auth = (props) => {
-
     const {
         inventory: { list: inventoryList },
       } = useSelector(mapStateToProps);
-
+      
     const [username, setUserName] = useState('');
     const [otpScreen, setOtpScreen] = useState(false);
     const [phone_number, setPhone] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [passwordScreen, setPasswordScreen] = useState(false);
     const [address, setAddress] = useState('');
     const [coordinates, setCoordinates] = useState('');
     const [address_url, setaddressURL] = useState('');
@@ -37,21 +38,20 @@ const Auth = (props) => {
     const [errors, setErrors] = useState(DEFAULT_INPUT_ERROR);
     const [login_option, setlogin_option] = useState('login');
     const dispatch = useDispatch()
-    const [loading, setLoading] = useState(false)
+    const [loading, setLoading] = useState(false);
     const location = useGeoLocation();
 
-
-    useEffect(() => {
-        clearInputs();
-    }, [login_option])
     useEffect(()=>{
         if(location.coordinates){
             const inventory = getNearestInventory(inventoryList, location.coordinates.lat, location.coordinates.lng);
             setInventory(inventory)
-            console.log(inventory,"nearest inventory is===d")
         }
         location.error?<LocationPopUp/>:(<div></div>)        
     },[location])
+
+    useEffect(() => {
+        clearInputs();
+    }, [login_option])
 
     const onChange = (e, key) => {
         const value = e.target.value;
@@ -70,7 +70,7 @@ const Auth = (props) => {
                 break;
             case 'PASSWORD':
                 setPassword(value);
-                validateInput(value, ['isRequired'], 'password');
+                validateInput(value, ['isRequired', 'isValidPassword'], 'password');
                 break;
             case 'ADDRESS':
                 setAddress(value);
@@ -82,17 +82,36 @@ const Auth = (props) => {
                 setOtp(value);
                 validateInput(value, ['isRequired'], 'otp');
                 break;
-            // case 'INVENTORY':
-            //     setInventory(value);
-            //     validateInput(value, ['isRequired'], 'inventory');
-            //     break;
         }
     }
-    
 
+    // const validateInput = (value, rules, key) => {
+    //     const { error = false, msg = '' } = validate(value, rules)
+    //     setErrors({ ...errors, [key]: { error, msg } });
+    // };
     const validateInput = (value, rules, key) => {
-        const { error = false, msg = '' } = validate(value, rules)
+        let validationRules = ['isRequired'];
+    
+        if (key === 'password') {
+            // Additional password validation rules
+            validationRules = validationRules.concat(['isValidPassword']);
+        }
+    
+        const { error = false, msg = '' } = validate(value, validationRules);
         setErrors({ ...errors, [key]: { error, msg } });
+    };
+
+    const isValidPassword = (value) => {
+        // Example: Minimum 8 characters, at least one letter, and one number
+        const minLength = 8;
+        const containsLetter = /[a-zA-Z]/.test(value);
+        const containsNumber = /\d/.test(value);
+    
+        return (
+            value.length >= minLength &&
+            containsLetter &&
+            containsNumber
+        );
     };
 
     const register = async () => {
@@ -101,22 +120,22 @@ const Auth = (props) => {
             if(inventory===null){
                 toast.error("your location cannot be delivered");
             }
-                const payload = {
-                    name: username,
-                    password,
-                    // password2: password,
-                    phone_number,
-                    role: 'C',
-                    address,
-                    inventory,
-                    coordinates,
-                    device_id: ''
-                }
-            
-            
+
+            const payload = {
+                name: username,
+                password,
+                // password2: password,
+                phone_number,
+                role: 'C',
+                address,
+                inventory,
+                coordinates,
+                device_id: ''
+            }
             if (email) {
                 payload['email'] = email;
             }
+            console.log(errors,"errors");
             const validationError = checkValidData(payload, errors);
             if (!validationError) {
                 const res = await authAPI.register(payload);
@@ -125,6 +144,9 @@ const Auth = (props) => {
                     toast.success('User is registered successfully');
                     setShowErr(false);
                     sendOtp();
+                }
+                else if(status === 400){
+                    console.log(res.data.data);
                 }
             }
             else {
@@ -135,8 +157,11 @@ const Auth = (props) => {
         } catch (error) {
             const msg = errorMsg(error);
             const status = get(error, 'response.status');
+            console.log(msg,"error");
+            console.log(status,"status");
             if (status === 400) {
-                const messages = get(error, 'response.data.data', {});
+                const messages = get(error, 'response.data.data.data', {});
+                console.log(messages,"messages");
                 showErrors(messages);
             }
             else {
@@ -150,7 +175,7 @@ const Auth = (props) => {
         setShowErr(true);
         let errorList = { ...errors };
         for (let key of Object.keys(messages)) {
-            console.log(key, errorList[key]);
+            console.log(key,"key")
             errorList[key] = {
                 error: true,
                 msg: messages[key] ? messages[key][0] : messages[key]
@@ -167,6 +192,7 @@ const Auth = (props) => {
             }
             const res = await authAPI.sendOtp(payload);
             if (res) {
+                console.log(res,"otp res");
                 const otpToken = get(res, 'data.data.Details')
                 setToken(otpToken)
                 setOtpScreen(true);
@@ -219,11 +245,12 @@ const Auth = (props) => {
         try {
             const payload = {
                 phone_number,
-                // password
+                password
             }
             const validationError = checkValidData(payload, errors);
             if (!validationError) {
                 const res = await authAPI.login(payload);
+                setPasswordScreen(true);
                 if (res) {
                     const statusCode = get(res, 'data.status');
                     if (statusCode === 200) {
@@ -265,7 +292,8 @@ const Auth = (props) => {
         setUserName('');
         setPhone('');
         setEmail('');
-        // setPassword('');
+        setPassword('');
+        setPasswordScreen(false);
         setOtpScreen(false);
         setOtp('');
         setToken('');
@@ -273,25 +301,34 @@ const Auth = (props) => {
         setShowErr(false);
     }
 
-    const controls = { phone_number, username, email, otp, address, coordinates };
+    const controls = { phone_number, username, email, otp, address, password, coordinates };
 
     return (
-        <div className='login-wrapper' >
-            <div className="login-container">
-                <div className='login-options'>
-                    <h5 className={login_option === 'login' ? 'login-head highlighted-head' : 'login-head'} onClick={() => { setlogin_option('login'); }} >Login</h5>
-                    <h5 className={login_option === 'signup' ? 'signup-head highlighted-head' : 'signup-head'} onClick={() => { setlogin_option('signup'); }} >Sign-Up</h5>
-                </div>
-                <hr className={login_option === 'login' ? 'login-left-hr' : 'login-right-hr'} />
-
-                {login_option === 'login'
-                    ?
-                    otpScreen ? <Otp controls={controls} submitHandler={verifyOtp} onChange={onChange} errors={errors} showErr={showErr} sendOtp={sendOtp} loading={loading} /> : <Login controls={controls} submitHandler={sendOtp} onChange={onChange} errors={errors} showErr={showErr} loading={loading} />
-                    : otpScreen ? <Otp controls={controls} submitHandler={verifyOtp} onChange={onChange} errors={errors} showErr={showErr} sendOtp={sendOtp} loading={loading} /> : <Signup controls={controls} submitHandler={register} onChange={onChange} errors={errors} showErr={showErr} loading={loading} />
-                }
+        <div className='login-wrapper'>
+          <div className="login-container">
+            <div className='login-options'>
+              <h5 className={login_option === 'login' ? 'login-head highlighted-head' : 'login-head'} onClick={() => { setlogin_option('login'); }} >Login</h5>
+              <h5 className={login_option === 'signup' ? 'signup-head highlighted-head' : 'signup-head'} onClick={() => { setlogin_option('signup'); }} >Sign-Up</h5>
             </div>
-        </div >
-    )
+            <hr className={login_option === 'login' ? 'login-left-hr' : 'login-right-hr'} />
+      
+            {login_option === 'login'
+              ? otpScreen
+                ? <Otp controls={controls} submitHandler={verifyOtp} onChange={onChange} errors={errors} showErr={showErr} sendOtp={sendOtp} loading={loading} />
+                : (
+                  <>
+                    <Login controls={controls} submitHandler={sendOtp} onChange={onChange} errors={errors} showErr={showErr} loading={loading} />
+                    <PasswordLogin controls={controls} submitHandler={loginHandler} onChange={onChange} errors={errors} showErr={showErr} loading={loading} />
+                  </>
+                )
+              : otpScreen
+                ? <Otp controls={controls} submitHandler={verifyOtp} onChange={onChange} errors={errors} showErr={showErr} sendOtp={sendOtp} loading={loading} />
+                : <Signup controls={controls} submitHandler={register} onChange={onChange} errors={errors} showErr={showErr} loading={loading} />
+            }
+          </div>
+        </div>
+      )
+      
 }
 
 export default Auth

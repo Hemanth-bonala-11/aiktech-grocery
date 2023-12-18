@@ -1,8 +1,6 @@
 import "./AddressForm.scss";
-
 import React, { useEffect, useState } from "react";
 import { Button, InputField, Signup } from "..";
-import Dropdown from './Dropdown'
 // import arrow from "../../Assets/Icons/bottom_arrow.svg";
 import { toast } from "react-toastify";
 import { addressAPI } from "../../Api";
@@ -91,7 +89,8 @@ const AddressForm = (props) => {
 
   useEffect(() => {
     if (props.isSignup !== true) {
-      if (addressLine1 !== "") {
+    
+      if ( addressLine1 !== "") {
         setcompleteAddress(addressLine1 + "\n" + addressLine2 + "\n" + pinCode + "coordinates{'lat':" + coordinates.lat + ",'long':" + coordinates.lng + ",'link':" + coordinates.link + "}");
         props.valueTransfer("new", addressToString(completeAddress));
       }
@@ -137,12 +136,6 @@ const AddressForm = (props) => {
   return (
     <form className="address-form-wrapper">
       {location.error ? <LocationPopUp show={modal} onClose={setmodal} /> : null}
-      {/* {props.labels ? <p className="address-area-label">Area</p> : null}
-      <Dropdown
-        placeholder={"Area"}
-        options={inventoryList}
-        onClick={setArea}
-      /> */}
       {!props.isSignup && <>
         <InputField
           onChange={(e) => setaddressLine1(e.target.value)}
@@ -173,7 +166,7 @@ const AddressForm = (props) => {
             clicker={() => {
               if (completeAddress)
                 addAddress(completeAddress);
-              else if (coordinates) {
+	      else if(coordinates) {
                 addAddress(coordinates, 4);
               }
               else toast.error("Empty Fields");

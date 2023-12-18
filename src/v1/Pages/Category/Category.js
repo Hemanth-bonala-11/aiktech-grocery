@@ -259,7 +259,7 @@ const debouncedLoadMore = debounce(loadMore, 500);
         </div> 
       
 
-      <div className="tab-products" ref={infiniteScrollerRef}>
+      <div className="tab-products">
         {productsList && productsList.length > 0 ? (      
           <InfiniteScroll
           className="product-cards"

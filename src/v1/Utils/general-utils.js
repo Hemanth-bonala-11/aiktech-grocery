@@ -79,6 +79,7 @@ const compare = (a, b) => {
 };
 
 export const errorMsg = (error) => {
+  console.log(error,"82");
   if (error && error["response"]) {
     const msg =
       get(error, "response.data.msg", "") ||
@@ -173,6 +174,7 @@ export const welcomeModalHandler = () => {
   return hidePopup && hidePopup === "true" ? true : false;
 };
 
+
 export const formatOptions = (options = [], key, val, act, lat, long, delivery_distance) => {
   let formattedOptions = [];
   formattedOptions = options.map((element) => {
@@ -261,18 +263,15 @@ export  function getCoordinates(string){
   
 }
 
+
 export const getNearestInventory =  (inventoryList, latitude, longitude)=>{
   
   let distances_list = [];
   let inventories = [];
-console.log(latitude,longitude,"coordinates");
 
 for(let i=0;i<inventoryList.length;i++){
 
-    console.log(inventoryList[i]);
     const distance = 1000*coordinateDistanceFinder(latitude,longitude,parseFloat(inventoryList[i].latitude),parseFloat(inventoryList[i].longitude));
-    console.log(distance,`distance${i}`);
-    console.log(inventoryList[i].deliverable_distance);
     if(distance<inventoryList[i].deliverable_distance){
       distances_list.push(distance);
       inventories.push(inventoryList[i].value)
@@ -280,18 +279,16 @@ for(let i=0;i<inventoryList.length;i++){
   }
 
   if(distances_list.length !==0 && inventories.length !== 0){
-    console.log(distances_list,"distances");
   const min = Math.min(...distances_list);
-  console.log(min,"min");
   const index = distances_list.indexOf(min);
-  console.log(index,"index");
-  console.log(inventories,"deliverable inventories");
   const inventory = inventories[index];
-  console.log(inventory,"selected inventory");
-  return inventory
+
+  return inventory;
   
   }
 else{
-  return null
+
+  return null;
+
 }
 }

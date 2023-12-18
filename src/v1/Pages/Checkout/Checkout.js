@@ -27,6 +27,7 @@ import { fetchUserDetails, updateUserInventory } from "../../Api/authAPI";
 const mapStateToProps = ({ cart, auth, payment, inventory }) => ({
   cart,
   auth,
+  inventory,
   payment,
   inventory
 });
@@ -41,7 +42,7 @@ export default function Checkout() {
     auth: { isLoggedIn = false},
     payment,
   } = useSelector(mapStateToProps);
-  const [userInventory,setUserInventory ] = useState("")
+
   useEffect(async ()=>{
     const response = await fetchUserDetails();
     console.log(response.data.data,"user");
@@ -78,6 +79,15 @@ export default function Checkout() {
   //   console.log(cartData);
   cartData.out_of_stock = outOfStock
   const { cartitem = [], delivery_charge, default_delivery_charge, previous_delivery_charge, transactionDebit, start_time } = cartData;
+  const [userInventory,setUserInventory ] = useState("")
+  useEffect(async ()=>{
+    const response = await fetchUserDetails();
+    if(response.data.data.inventory){
+      setUserInventory(response.data.data.inventory.id)
+    }
+    
+  },[])
+
   useEffect(() => {
     if (isLoggedIn) {
       fetchCartDetails();
@@ -88,6 +98,8 @@ export default function Checkout() {
     dispatch(actionsCreator.SET_PREVIOUS_DELIVERY_CHARGE({previous_delivery_charge: cartData.delivery_charge}))
     dispatch(actionsCreator.FETCH_CART_DETAILS());
   };
+
+
 
   const removeItem = async (product) => {
     try {
