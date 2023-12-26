@@ -59,16 +59,20 @@ export default function AddStock() {
   const [expiry,setExpiry]=useState(null);
   const [batch_number,setBatchNumber]=useState(null)
   const [allInventories,SetAllInventories]=useState(null);
-  const [allproducts,setAllProducts]=useState([])
+  const [allproducts,setAllProducts]=useState([]);
+  console.log(allInventories,"all inventories");
 
 
   console.log(allproducts,"all products");
 
   const inventoryHandler=(e)=>{
     setInventory(e.target.value)
+    console.log(typeof e.target.value,"selected inventory");
     allInventories.map(i => {
-      if(i.name===e.target.value){
+      console.log(typeof i.id,"inventory");
+      if(i.id===Number(e.target.value)){
         setInventoryname(i.name);
+        console.log(i.name,"name of inventory");
         const config={
             params:{
             "name":i.name
@@ -108,6 +112,7 @@ export default function AddStock() {
     const invenrorys_promise=dashboardAPI.fetchInventorys();
     invenrorys_promise.then((response)=>{
      SetAllInventories(response.data.message);
+     
     }).catch((err)=>{
       console.log(err.message);
     });

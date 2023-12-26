@@ -462,13 +462,7 @@ export default function Checkout() {
         order_list: modifiedCartItems,
         mode_of_payment: mode_of_payment,
       };
-      const deliverable = await checkDeliverability();
-      console.log(deliverable,"deliverable");
-      if(!deliverable){
-        setLoading(false)
-        return toast.error("cannot order your location")
-        
-      }
+      
       try {
         fetchCartDetails()
         if (cartData.delivery_charge>cartData.default_delivery_charge){

@@ -4,6 +4,8 @@ import { cartAPI } from '../../Api';
 import { toast } from 'react-toastify';
 import get from 'lodash/get';
 
+
+
 export default function Invoiceslip({ id }) {
     const [invoice, setInvoice] = useState({})
     useEffect(() => {
@@ -28,21 +30,21 @@ export default function Invoiceslip({ id }) {
     const { data: invoiceDetails = {}, items: invoiceitem = [], final_delivery_charge = 0, packaging_charge = 0, promotional_discount, default_delivery_charge = 0 } = invoice || {}
     const { invoice_id, final_price = 0 } = invoiceDetails || {};
     return (
-        <div className="invoice-details">
+        <div className="invoice-details" id='invoice'>
             <div className="item-details">
                 <h5 className="small_headline fill-color">GST-NO:- 29AAMCP1530D1ZK</h5>
                 <h5 className="small_headline fill-color">#{invoice_id}</h5>
                 <div className="b-top w-100 mt-4"></div>
-                <div className="table-responsive">
-                    <table className="product__details__table">
-                        <thead>
+                <div className="table-wrapper">
+                    <table className="table" id='invoice-table'>
+                        <thead className='table-head'>
                             <th>Product</th>
                             <th>Qty</th>
                             <th>Price <small>(per unit)</small> </th>
                             <th>Total Price</th>
                             <th>Discount Price</th>
                         </thead>
-                        <tbody>
+                        <tbody className='table-row'>
                             {invoiceitem ?
                                 invoiceitem.map((i, index) => (
                                     <>
@@ -75,6 +77,11 @@ export default function Invoiceslip({ id }) {
                         }
                     </React.Fragment>
                     </div>}
+                    <div>
+                    
+
+                    </div>
+                    
             </div>
             <div className="price-details">
                 <h5 className="small_headline fill-color">PRICE DETAILS</h5>
@@ -110,6 +117,7 @@ export default function Invoiceslip({ id }) {
                 <div className="b-top w-100 mt-4"></div>
 
             </div>
+            
         </div>
     )
 }
